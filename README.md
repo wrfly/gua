@@ -12,44 +12,56 @@ just `gua`.
 package main
 
 import (
+    "flag"
     "fmt"
+    "time"
 
     "github.com/wrfly/gua"
 )
 
 type cliFlags struct {
-    Name  string `name:"name" default:"wrfly" desc:"just a name"`
-    Age   int
-    Extra struct {
+    Name     string `name:"name" default:"wrfly" desc:"just a name"`
+    Age      int
+    Slice    []string      `desc:"test string slice"`
+    SliceInt []int         `desc:"test int slice"`
+    Time     time.Duration `desc:"test time duration"`
+    Extra    struct {
         Loc   string `default:"home" desc:"location"`
-        Valid bool
+        Valid bool   `default:"true"`
     }
 }
 
 func main() {
     cli := new(cliFlags)
-    gua.Parse(cli)
-    fmt.Printf("%+v\n", cli)
+    if err := gua.Parse(cli); err != nil {
+        panic(err)
+    }
+
+    fmt.Printf("%+v\n", *cli)
 }
 ```
 
 ```txt
 ➜ /tmp/example -h
 Usage of /tmp/example:
-  -cliFlags.Age string
-  -cliFlags.Extra.Loc string
-        location (default "home")
-  -cliFlags.Extra.Valid string
-  -name string
-        just a name (default "wrfly")
+ -cliFlags.Age
+ -cliFlags.Extra.Loc     location   [home]
+ -cliFlags.Extra.Valid   [true]
+ -cliFlags.Slice         test string slice
+ -cliFlags.SliceInt      test int slice
+ -cliFlags.Time          test time duration
+ -name                   just a name   [wrfly]
 
 ➜ /tmp/example
-&{Name:wrfly Age:0 Extra:{Loc:home Valid:false}}
+{Name:wrfly Age:0 Slice:[] SliceInt:[] Time:0s Extra:{Loc:home Valid:true}}
 
-➜ /tmp/example \
+➜ /tmp/example \  
     -name frog \
     -cliFlags.Age 3 \
     -cliFlags.Extra.Loc pool \
-    -cliFlags.Extra.Valid true
-&{Name:frog Age:3 Extra:{Loc:pool Valid:true}}
+    -cliFlags.Extra.Valid true \
+    -cliFlags.Slice "a b c" \
+    -cliFlags.SliceInt "1 2 3" \
+    -cliFlags.Time "365d"
+{Name:frog Age:3 Slice:[a b c] SliceInt:[1 2 3] Time:8760h0m0s Extra:{Loc:pool Valid:true}}
 ```

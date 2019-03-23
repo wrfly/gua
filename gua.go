@@ -3,32 +3,35 @@ package gua
 import (
 	"flag"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/wrfly/ecp"
 )
 
 type gua struct {
 	m map[string]key
+	f *flag.FlagSet
 }
 
-func (g *gua) getKey(parentName, structName string, tag reflect.StructTag) (key string) {
+func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 	desc := tag.Get("desc")
-	key = tag.Get("name")
+	key := tag.Get("name")
 	if key == "" {
-		key = fmt.Sprintf("%s.%s", parentName, structName)
+		key = fmt.Sprintf("%s.%s", pName, sName)
 	}
 	if desc != "" {
 		key += "|" + desc
 	}
-	return
+	return key
 }
 
-func (g *gua) getFlagValue(field reflect.Value, key string) (value string, exist bool) {
+func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 	key = strings.Split(key, "|")[0]
 	f := g.m[key]
-	v := flag.Lookup(f.name)
+	v := g.f.Lookup(f.name)
 	if v != nil {
 		return v.Value.String(), true
 	}
@@ -41,21 +44,42 @@ type key struct {
 	desc  string
 }
 
-func Parse(c interface{}) {
-	frog := gua{
-		m: make(map[string]key, 20),
+func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		w := tabwriter.NewWriter(
+			os.Stderr, 10, 4, 3, ' ',
+			tabwriter.StripEscape)
+		f.VisitAll(func(f *flag.Flag) {
+			var format string
+			switch {
+			case f.Usage == "" && f.DefValue == "":
+				format = fmt.Sprintf(" -%s", f.Name)
+			case f.Usage != "" && f.DefValue == "":
+				format = fmt.Sprintf(" -%s\t%s", f.Name, f.Usage)
+			case f.Usage == "" && f.DefValue != "":
+				format = fmt.Sprintf(" -%s\t[%s]", f.Name, f.DefValue)
+			case f.Usage != "" && f.DefValue != "":
+				format = fmt.Sprintf(" -%s\t%s\t[%s]", f.Name, f.Usage, f.DefValue)
+			}
+			w.Write([]byte(format + "\n"))
+		})
+		w.Flush()
 	}
+	f.Usage = flag.Usage
+
+	frog := gua{make(map[string]key, 20), f}
 
 	ecp.GetKey = frog.getKey
 	ecp.LookupValue = frog.getFlagValue
-
-	ecp.Default(c)
 
 	fullName := reflect.TypeOf(c).String()
 	i := strings.LastIndex(fullName, ".")
 	structName := fullName[i+1:]
 
-	ecp.Parse(c, structName)
+	if err := ecp.Parse(c, structName); err != nil {
+		return err
+	}
 
 	for _, fullKey := range ecp.List(c, structName) {
 		var value, desc string
@@ -79,10 +103,14 @@ func Parse(c interface{}) {
 	}
 
 	for _, v := range frog.m {
-		v.value = flag.String(v.name, *v.value, v.desc)
+		v.value = f.String(v.name, *v.value, v.desc)
 	}
-	flag.Parse()
+	f.Parse(os.Args[1:])
 
 	// parse from cli again
-	ecp.Parse(c, structName)
+	return ecp.Parse(c, structName)
+}
+
+func Parse(c interface{}) error {
+	return ParseWithFlagSet(c, flag.CommandLine)
 }
