@@ -1,10 +1,10 @@
-# gua
+# guá
 
 Somehow I saw this [repo](https://github.com/alexflint/go-arg) and want
 to rewrite a same one using [ecp](https://github.com/wrfly/ecp).
 
 If you want to convert a golang structure into some command line flags,
-just `gua`.
+just `guá`.
 
 ## Example
 
