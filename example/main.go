@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -8,8 +9,8 @@ import (
 )
 
 type cliFlags struct {
-	Name     string `name:"name" default:"wrfly" desc:"just a name"`
-	Age      int
+	Name     string        `name:"name" default:"wrfly" desc:"just a name"`
+	Age      int           `desc:"the age"`
 	Slice    []string      `desc:"test string slice"`
 	SliceInt []int         `desc:"test int slice"`
 	Time     time.Duration `desc:"test time duration"`
@@ -25,5 +26,6 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("%+v\n", *cli)
+	bs, _ := json.MarshalIndent(cli, "", "  ")
+	fmt.Printf("%s\n", bs)
 }

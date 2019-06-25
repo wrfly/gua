@@ -20,12 +20,16 @@ func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 	desc := tag.Get("desc")
 	key := tag.Get("name")
 	if key == "" {
-		key = fmt.Sprintf("%s.%s", pName, sName)
+		if pName == "" {
+			key = sName
+		} else {
+			key = pName + "." + sName
+		}
 	}
 	if desc != "" {
 		key += "|" + desc
 	}
-	return key
+	return strings.ToLower(key)
 }
 
 func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
@@ -73,15 +77,11 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	ecp.GetKey = frog.getKey
 	ecp.LookupValue = frog.getFlagValue
 
-	fullName := reflect.TypeOf(c).String()
-	i := strings.LastIndex(fullName, ".")
-	structName := fullName[i+1:]
-
-	if err := ecp.Parse(c, structName); err != nil {
+	if err := ecp.Parse(c, ""); err != nil {
 		return err
 	}
 
-	for _, fullKey := range ecp.List(c, structName) {
+	for _, fullKey := range ecp.List(c, "") {
 		var value, desc string
 
 		x := strings.Split(fullKey, "=")
@@ -108,9 +108,10 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	f.Parse(os.Args[1:])
 
 	// parse from cli again
-	return ecp.Parse(c, structName)
+	return ecp.Parse(c, "")
 }
 
+// Parse the structure
 func Parse(c interface{}) error {
 	return ParseWithFlagSet(c, flag.CommandLine)
 }
