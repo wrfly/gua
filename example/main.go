@@ -17,7 +17,9 @@ type cliFlags struct {
 	Extra    struct {
 		Loc   string `default:"home" desc:"location"`
 		Valid bool   `default:"true"`
+		Debug bool
 	}
+	Type string `desc:"A|B|C"`
 }
 
 func main() {

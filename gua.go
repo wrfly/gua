@@ -11,6 +11,8 @@ import (
 	"github.com/wrfly/ecp"
 )
 
+var splitter = "#|-_-|#" // tricky word
+
 type gua struct {
 	m map[string]key
 	f *flag.FlagSet
@@ -25,15 +27,17 @@ func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 		} else {
 			key = pName + "." + sName
 		}
+		key = strings.ToLower(key)
 	}
+	key = strings.ToLower(key)
 	if desc != "" {
-		key += "|" + desc
+		key += splitter + desc
 	}
-	return strings.ToLower(key)
+	return key
 }
 
 func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
-	key = strings.Split(key, "|")[0]
+	key = strings.Split(key, splitter)[0]
 	f := g.m[key]
 	v := g.f.Lookup(f.name)
 	if v != nil {
@@ -48,6 +52,12 @@ type key struct {
 	desc  string
 }
 
+// ParseWithNew use a fresh new flag set
+func ParseWithNew(c interface{}, name string) error {
+	return ParseWithFlagSet(c, flag.NewFlagSet(name, flag.ExitOnError))
+}
+
+// ParseWithFlagSet can use a flag set you give
 func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -89,8 +99,8 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 		if len(x) == 2 {
 			value = x[1]
 		}
-		xx := strings.Split(x[0], "|")
-		if len(xx) == 2 {
+		xx := strings.Split(x[0], splitter)
+		if len(xx) >= 2 {
 			name = xx[0]
 			desc = xx[1]
 		}
