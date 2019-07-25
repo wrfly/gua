@@ -4,3 +4,5 @@ github.com/wrfly/ecp v0.0.0-20190321181722-563aa2b61fa2 h1:sZ96zRMTzmnhft2+iACUl
 github.com/wrfly/ecp v0.0.0-20190321181722-563aa2b61fa2/go.mod h1:lTrjsp9nYtempzKMd5XzGjU1MraaXFrhPTs8WhC3DFU=
 github.com/wrfly/ecp v0.1.0 h1:btwZO5LGlM5SNykaUXGkJIjwckpjPU2MjFatehSCmY8=
 github.com/wrfly/ecp v0.1.0/go.mod h1:cmmFTD+MLlrDa3/EO3gjeKLKUhHiYP3cgaaJamIS1NU=
+github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0 h1:Zy3Chk4CvwAqJ6YgQym6hJQEk4JE7iPbHRfxkru6Zn0=
+github.com/wrfly/ecp v0.1.1-0.20190725160759-97269b9e95f0/go.mod h1:cmmFTD+MLlrDa3/EO3gjeKLKUhHiYP3cgaaJamIS1NU=

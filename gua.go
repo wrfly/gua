@@ -46,10 +46,18 @@ func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 	return "", false
 }
 
+func init() {
+	// reset lookup key function
+	ecp.LookupKey = func(original, _, _ string) string { return original }
+}
+
 type key struct {
 	name  string
 	value *string
 	desc  string
+
+	isBool bool
+	boolV  *bool
 }
 
 // ParseWithNew use a fresh new flag set
@@ -92,13 +100,23 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	}
 
 	for _, fullKey := range ecp.List(c, "") {
-		var value, desc string
+		var (
+			value, desc string
+			isBool      bool
+		)
 
 		x := strings.Split(fullKey, "=")
 		name := x[0]
 		if len(x) == 2 {
 			value = x[1]
 		}
+
+		// set bool flag
+		boolV, err := ecp.GetBool(c, name)
+		if err == nil {
+			isBool = true
+		}
+
 		xx := strings.Split(x[0], splitter)
 		if len(xx) >= 2 {
 			name = xx[0]
@@ -106,14 +124,20 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 		}
 
 		frog.m[name] = key{
-			name:  name,
-			value: &value,
-			desc:  desc,
+			name:   name,
+			value:  &value,
+			desc:   desc,
+			isBool: isBool,
+			boolV:  &boolV,
 		}
 	}
 
 	for _, v := range frog.m {
-		v.value = f.String(v.name, *v.value, v.desc)
+		if v.isBool {
+			v.boolV = f.Bool(v.name, *v.boolV, v.desc)
+		} else {
+			v.value = f.String(v.name, *v.value, v.desc)
+		}
 	}
 	f.Parse(os.Args[1:])
 
