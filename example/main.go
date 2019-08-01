@@ -12,7 +12,7 @@ type cliFlags struct {
 	Name     string        `name:"name" default:"wrfly" desc:"just a name"`
 	Age      int           `desc:"the age"`
 	Slice    []string      `desc:"test string slice"`
-	SliceInt []int         `desc:"test int slice"`
+	SliceInt []int         `desc:"test int slice" default:"1 2 3"`
 	Time     time.Duration `desc:"test time duration"`
 	Extra    struct {
 		Loc   string `default:"home" desc:"location"`

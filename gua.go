@@ -18,18 +18,25 @@ type gua struct {
 	f *flag.FlagSet
 }
 
+func firstKeyLower(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToLower(string(s[0])) + s[1:]
+}
+
 func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 	desc := tag.Get("desc")
 	key := tag.Get("name")
+	pName = firstKeyLower(pName)
+	sName = firstKeyLower(sName)
 	if key == "" {
 		if pName == "" {
 			key = sName
 		} else {
 			key = pName + "." + sName
 		}
-		key = strings.ToLower(key)
 	}
-	key = strings.ToLower(key)
 	if desc != "" {
 		key += splitter + desc
 	}
@@ -41,7 +48,9 @@ func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 	f := g.m[key]
 	v := g.f.Lookup(f.name)
 	if v != nil {
-		return v.Value.String(), true
+		str := v.Value.String()
+		str = strings.Trim(str, "\"")
+		return str, true
 	}
 	return "", false
 }
@@ -73,6 +82,7 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 			os.Stderr, 10, 4, 3, ' ',
 			tabwriter.StripEscape)
 		f.VisitAll(func(f *flag.Flag) {
+			f.DefValue = strings.Trim(f.DefValue, "\"")
 			var format string
 			switch {
 			case f.Usage == "" && f.DefValue == "":
