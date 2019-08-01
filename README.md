@@ -6,13 +6,15 @@ to rewrite a same one using [ecp](https://github.com/wrfly/ecp).
 If you want to convert a golang structure into some command line flags,
 just `guá`.
 
+It's small and useful for some simple command line tools.
+
 ## Example
 
 ```golang
 package main
 
 import (
-    "flag"
+    "encoding/json"
     "fmt"
     "time"
 
@@ -20,15 +22,17 @@ import (
 )
 
 type cliFlags struct {
-    Name     string `name:"name" default:"wrfly" desc:"just a name"`
-    Age      int
+    Name     string        `name:"nnnnname" default:"wrfly" desc:"just a name"`
+    Age      int           `desc:"the age"`
     Slice    []string      `desc:"test string slice"`
-    SliceInt []int         `desc:"test int slice"`
+    SliceInt []int         `desc:"test int slice" default:"1 2 3"`
     Time     time.Duration `desc:"test time duration"`
     Extra    struct {
         Loc   string `default:"home" desc:"location"`
         Valid bool   `default:"true"`
+        Debug bool
     }
+    Type string `desc:"A|B|C"`
 }
 
 func main() {
@@ -37,31 +41,70 @@ func main() {
         panic(err)
     }
 
-    fmt.Printf("%+v\n", *cli)
+    bs, _ := json.MarshalIndent(cli, "", "  ")
+    fmt.Printf("%s\n", bs)
 }
 ```
 
-```txt
-➜ /tmp/example -h
-Usage of /tmp/example:
- -cliFlags.Age
- -cliFlags.Extra.Loc     location   [home]
- -cliFlags.Extra.Valid   [true]
- -cliFlags.Slice         test string slice
- -cliFlags.SliceInt      test int slice
- -cliFlags.Time          test time duration
- -name                   just a name   [wrfly]
+```bash
+# run the example
+./gua
+{
+  "Name": "wrfly",
+  "Age": 0,
+  "Slice": null,
+  "SliceInt": [
+    1,
+    2,
+    3
+  ],
+  "Time": 0,
+  "Extra": {
+    "Loc": "home",
+    "Valid": false,
+    "Debug": false
+  },
+  "Type": ""
+}
 
-➜ /tmp/example
-{Name:wrfly Age:0 Slice:[] SliceInt:[] Time:0s Extra:{Loc:home Valid:true}}
 
-➜ /tmp/example \  
-    -name frog \
-    -cliFlags.Age 3 \
-    -cliFlags.Extra.Loc pool \
-    -cliFlags.Extra.Valid true \
-    -cliFlags.Slice "a b c" \
-    -cliFlags.SliceInt "1 2 3" \
-    -cliFlags.Time "365d"
-{Name:frog Age:3 Slice:[a b c] SliceInt:[1 2 3] Time:8760h0m0s Extra:{Loc:pool Valid:true}}
+# show some help message
+./gua -h
+Usage of ./gua:
+ -age           the age
+ -extra.debug   [false]
+ -extra.loc     location   [home]
+ -extra.valid   [false]
+ -nnnnname      just a name   [wrfly]
+ -slice         test string slice
+ -sliceInt      test int slice   [1 2 3]
+ -time          test time duration
+ -type          A|B|C
+
+
+# add some flags
+./gua -age 18 -extra.debug -nnnnname gua \
+    -slice "hello world" -sliceInt "1 3 5 7" \
+    -time 1m -type C
+{
+  "Name": "gua",
+  "Age": 18,
+  "Slice": [
+    "hello",
+    "world"
+  ],
+  "SliceInt": [
+    1,
+    3,
+    5,
+    7
+  ],
+  "Time": 60000000000,
+  "Extra": {
+    "Loc": "home",
+    "Valid": false,
+    "Debug": true
+  },
+  "Type": "C"
+}
 ```

@@ -9,7 +9,7 @@ import (
 )
 
 type cliFlags struct {
-	Name     string        `name:"name" default:"wrfly" desc:"just a name"`
+	Name     string        `name:"nnnnname" default:"wrfly" desc:"just a name"`
 	Age      int           `desc:"the age"`
 	Slice    []string      `desc:"test string slice"`
 	SliceInt []int         `desc:"test int slice" default:"1 2 3"`
