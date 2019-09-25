@@ -1,6 +1,7 @@
 package gua
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -14,8 +15,26 @@ import (
 var splitter = "#|-_-|#" // tricky word
 
 type gua struct {
-	m map[string]key
+	m map[string]keyInfo
 	f *flag.FlagSet
+}
+
+type keyInfo struct {
+	Name    string `json:"0,omitempty"`
+	Desc    string `json:"1,omitempty"`
+	Value   string `json:"2,omitempty"`
+	IsBool  bool   `json:"3,omitempty"`
+	BoolVal bool   `json:"4,omitempty"`
+	SubCmd  bool   `json:"5,omitempty"`
+}
+
+func (k *keyInfo) Encode() string {
+	bs, _ := json.Marshal(k)
+	return string(bs)
+}
+
+func (k *keyInfo) Decode(str string) {
+	json.Unmarshal([]byte(str), k)
 }
 
 func firstKeyLower(s string) string {
@@ -27,26 +46,29 @@ func firstKeyLower(s string) string {
 
 func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 	desc := tag.Get("desc")
-	key := tag.Get("name")
+	name := tag.Get("name")
 	pName = firstKeyLower(pName)
 	sName = firstKeyLower(sName)
-	if key == "" {
-		if pName == "" {
-			key = sName
-		} else {
-			key = pName + "." + sName
+	if name == "" {
+		name = sName
+		if pName != "" {
+			x := new(keyInfo)
+			x.Decode(pName)
+			name = x.Name + "." + sName
 		}
 	}
-	if desc != "" {
-		key += splitter + desc
+
+	key := &keyInfo{
+		Name: name,
+		Desc: desc,
 	}
-	return key
+	return key.Encode()
 }
 
 func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 	key = strings.Split(key, splitter)[0]
 	f := g.m[key]
-	v := g.f.Lookup(f.name)
+	v := g.f.Lookup(f.Name)
 	if v != nil {
 		str := v.Value.String()
 		str = strings.Trim(str, "\"")
@@ -58,15 +80,6 @@ func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 func init() {
 	// reset lookup key function
 	ecp.LookupKey = func(original, _, _ string) string { return original }
-}
-
-type key struct {
-	name  string
-	value *string
-	desc  string
-
-	isBool bool
-	boolV  *bool
 }
 
 // ParseWithNew use a fresh new flag set
@@ -100,7 +113,7 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	}
 	f.Usage = flag.Usage
 
-	frog := gua{make(map[string]key, 20), f}
+	frog := gua{make(map[string]keyInfo, 20), f}
 
 	ecp.GetKey = frog.getKey
 	ecp.LookupValue = frog.getFlagValue
@@ -109,44 +122,29 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 		return err
 	}
 
+	var err error
 	for _, fullKey := range ecp.List(c, "") {
-		var (
-			value, desc string
-			isBool      bool
-		)
-
 		x := strings.Split(fullKey, "=")
-		name := x[0]
+		info := new(keyInfo)
+		info.Decode(x[0])
 		if len(x) == 2 {
-			value = x[1]
+			info.Value = x[1]
 		}
 
 		// set bool flag
-		boolV, err := ecp.GetBool(c, name)
+		info.BoolVal, err = ecp.GetBool(c, info.Name)
 		if err == nil {
-			isBool = true
+			info.IsBool = true
 		}
 
-		xx := strings.Split(x[0], splitter)
-		if len(xx) >= 2 {
-			name = xx[0]
-			desc = xx[1]
-		}
-
-		frog.m[name] = key{
-			name:   name,
-			value:  &value,
-			desc:   desc,
-			isBool: isBool,
-			boolV:  &boolV,
-		}
+		frog.m[info.Name] = *info
 	}
 
 	for _, v := range frog.m {
-		if v.isBool {
-			v.boolV = f.Bool(v.name, *v.boolV, v.desc)
+		if v.IsBool {
+			v.BoolVal = *f.Bool(v.Name, v.BoolVal, v.Desc)
 		} else {
-			v.value = f.String(v.name, *v.value, v.desc)
+			v.Value = *f.String(v.Name, v.Value, v.Desc)
 		}
 	}
 	f.Parse(os.Args[1:])
