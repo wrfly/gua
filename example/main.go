@@ -10,7 +10,7 @@ import (
 
 type cliFlags struct {
 	Name     string        `name:"nnnnname" default:"wrfly" desc:"just a name"`
-	Age      int           `desc:"the age"`
+	Age      int           `desc:"the age" default:"10"`
 	Slice    []string      `desc:"test string slice"`
 	SliceInt []int         `desc:"test int slice" default:"1 2 3"`
 	Time     time.Duration `desc:"test time duration"`
