@@ -55,11 +55,6 @@ func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
 	return "", false
 }
 
-func init() {
-	// reset lookup key function
-	ecp.LookupKey = func(original, _, _ string) string { return original }
-}
-
 type key struct {
 	name  string
 	value *string
@@ -102,8 +97,10 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 
 	frog := gua{make(map[string]key, 20), f}
 
+	ecp := ecp.New()
 	ecp.GetKey = frog.getKey
 	ecp.LookupValue = frog.getFlagValue
+	ecp.LookupKey = func(original, _, _ string) string { return original }
 
 	if err := ecp.Parse(c, ""); err != nil {
 		return err
