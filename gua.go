@@ -43,7 +43,7 @@ func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
 	return key
 }
 
-func (g *gua) getFlagValue(field reflect.Value, key string) (string, bool) {
+func (g *gua) getFlagValue(key string) (string, bool) {
 	key = strings.Split(key, splitter)[0]
 	f := g.m[key]
 	v := g.f.Lookup(f.name)
@@ -98,9 +98,8 @@ func ParseWithFlagSet(c interface{}, f *flag.FlagSet) error {
 	frog := gua{make(map[string]key, 20), f}
 
 	ecp := ecp.New()
-	ecp.GetKey = frog.getKey
+	ecp.BuildKey = frog.getKey
 	ecp.LookupValue = frog.getFlagValue
-	ecp.LookupKey = func(original, _, _ string) string { return original }
 
 	if err := ecp.Parse(c, ""); err != nil {
 		return err
