@@ -18,25 +18,32 @@ type gua struct {
 	f *flag.FlagSet
 }
 
-func firstKeyLower(s string) string {
+func firstKeyLower(s string) (string, bool) {
 	if s == "" {
-		return s
+		return s, false
 	}
-	return strings.ToLower(string(s[0])) + s[1:]
+	ns := strings.ToLower(string(s[0])) + s[1:]
+	return ns, s == ns
 }
 
-func (g *gua) getKey(pName, sName string, tag reflect.StructTag) string {
-	desc := tag.Get("desc")
+func (g *gua) getKey(structure, field string, tag reflect.StructTag) string {
+	structure, _ = firstKeyLower(structure)
+	var lower bool
+	if field, lower = firstKeyLower(field); lower {
+		return ""
+	}
 	key := tag.Get("name")
-	pName = firstKeyLower(pName)
-	sName = firstKeyLower(sName)
+	if key == "-" { // ignore this key
+		return ""
+	}
 	if key == "" {
-		if pName == "" {
-			key = sName
+		if structure == "" {
+			key = field
 		} else {
-			key = pName + "." + sName
+			key = structure + "." + field
 		}
 	}
+	desc := tag.Get("desc")
 	if desc != "" {
 		key += splitter + desc
 	}
