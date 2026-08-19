@@ -1,5 +1,5 @@
 module github.com/wrfly/gua
 
-go 1.12
+go 1.19
 
-require github.com/wrfly/ecp v0.2.3
+require github.com/wrfly/ecp v0.3.0

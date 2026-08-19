@@ -3,6 +3,7 @@ package gua
 import (
 	"flag"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 )
@@ -82,4 +83,87 @@ func TestGua(t *testing.T) {
 		t.Fatal("???")
 	}
 
+}
+
+// the flags actually have to end up in the structure: the test above only
+// checks that parsing does not fail, which kept passing through an ecp
+// upgrade that changed how values are set
+func TestParseFlags(t *testing.T) {
+	type conf struct {
+		Name  string `default:"wrfly" desc:"a name"`
+		Age   int
+		Alive bool `default:"true"`
+		Debug bool
+		Slice []string
+		Ints  []int `default:"1 2 3"`
+		Time  time.Duration
+		Extra struct {
+			Loc string `default:"home"`
+		}
+	}
+
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = []string{"gua.test",
+		"-name", "bob",
+		"-age", "30",
+		"-alive=false", // a default of true has to be overridable
+		"-debug",
+		"-slice", "a b c",
+		"-time", "3d", // ecp duration syntax
+		"-extra.loc", "office",
+	}
+
+	c := new(conf)
+	set := flag.NewFlagSet("gua", flag.ContinueOnError)
+	if err := ParseWithFlagSet(c, set); err != nil {
+		t.Fatal(err)
+	}
+
+	switch {
+	case c.Name != "bob":
+		t.Errorf("name: %q", c.Name)
+	case c.Age != 30:
+		t.Errorf("age: %d", c.Age)
+	case c.Alive:
+		t.Error("alive should have been turned off by the flag")
+	case !c.Debug:
+		t.Error("debug should have been turned on by the flag")
+	case len(c.Slice) != 3 || c.Slice[2] != "c":
+		t.Errorf("slice: %q", c.Slice)
+	case len(c.Ints) != 3 || c.Ints[0] != 1:
+		t.Errorf("ints: %v", c.Ints)
+	case c.Time != 72*time.Hour:
+		t.Errorf("time: %v", c.Time)
+	case c.Extra.Loc != "office":
+		t.Errorf("extra.loc: %q", c.Extra.Loc)
+	}
+}
+
+// defaults survive when no flag is given
+func TestParseDefaults(t *testing.T) {
+	type conf struct {
+		Name  string `default:"wrfly"`
+		Alive bool   `default:"true"`
+		Ints  []int  `default:"1 2 3"`
+	}
+
+	oldArgs := os.Args
+	defer func() { os.Args = oldArgs }()
+	os.Args = []string{"gua.test"}
+
+	c := new(conf)
+	set := flag.NewFlagSet("gua", flag.ContinueOnError)
+	if err := ParseWithFlagSet(c, set); err != nil {
+		t.Fatal(err)
+	}
+
+	switch {
+	case c.Name != "wrfly":
+		t.Errorf("name: %q", c.Name)
+	case !c.Alive:
+		t.Error("alive should have kept its default")
+	case len(c.Ints) != 3:
+		t.Errorf("ints: %v", c.Ints)
+	}
 }
